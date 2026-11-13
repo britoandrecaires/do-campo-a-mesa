@@ -1,0 +1,37 @@
+
+# Dependências
+node_modules/
+**/node_modules/
+
+# Variáveis de ambiente e credenciais
+.env
+.env.*
+**/.env
+**/.env.*
+!.env.example
+!**/.env.example
+
+# Fotografias guardadas localmente
+api/uploads/
+**/uploads/
+
+# Ficheiros gerados
+dist/
+**/dist/
+build/
+coverage/
+
+# Logs
+*.log
+npm-debug.log*
+
+# Sistema e editor
+.DS_Store
+Thumbs.db
+.vscode/
+
+# Certificados e chaves privadas
+*.pem
+*.key
+*.p12
+*.pfx

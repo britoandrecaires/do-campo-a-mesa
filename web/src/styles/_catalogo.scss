@@ -1,28 +1,146 @@
+// ==========================================
+// GRELHA DE PRODUTOS — MOBILE FIRST
+// ==========================================
+
 .grelha-produtos {
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
   gap: 1rem;
-  grid-template-columns: 1fr;                 // telemóvel
-  @include a-partir-de(md) { grid-template-columns: repeat(2, 1fr); }
-  @include a-partir-de(lg) { grid-template-columns: repeat(3, 1fr); }
-  @include a-partir-de(xl) { grid-template-columns: repeat(4, 1fr); }
 }
 
-.cartao-produto {
-  border-color: $linha;
-  overflow: hidden;
-
-  &__imagem { height: 160px; background: rgba($verde, .12); }
-  .preco { color: $verde; font-weight: 700; font-size: 1.15rem; }
-  .etiqueta-bio {
-    align-self: flex-start;
-    font-size: .7rem; font-weight: 700;
-    padding: .15rem .5rem; margin-bottom: .5rem;
-    border-radius: .35rem;
-    background: rgba($verde, .12); color: $verde-escuro;
+// A partir de 390 px: 2 colunas
+@media (min-width: 390px) {
+  .grelha-produtos {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.65rem;
   }
 }
 
+// A partir de 768 px: 3 colunas
+@media (min-width: 768px) {
+  .grelha-produtos {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 1rem;
+  }
+}
+
+// A partir de 1280 px: 4 colunas
+@media (min-width: 1280px) {
+  .grelha-produtos {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+// ==========================================
+// CARTÕES DOS PRODUTOS
+// ==========================================
+
+.cartao-produto {
+  min-width: 0;
+  border-color: $linha;
+  overflow: hidden;
+
+  &__imagem {
+    height: 230px;
+    background: rgba($verde, 0.12);
+  }
+
+  .preco {
+    color: $verde;
+    font-weight: 700;
+    font-size: 1.15rem;
+  }
+
+  .etiqueta-bio {
+    align-self: flex-start;
+    font-size: 0.7rem;
+    font-weight: 700;
+    padding: 0.15rem 0.5rem;
+    margin-bottom: 0.5rem;
+    border-radius: 0.35rem;
+    background: rgba($verde, 0.12);
+    color: $verde-escuro;
+  }
+}
+
+// ==========================================
+// CARTÕES COMPACTOS ENTRE 390 E 767 PX
+// ==========================================
+
+@media (min-width: 390px) and (max-width: 767.98px) {
+  .cartao-produto {
+
+    // Uniformizar as imagens sem cortar produtos
+    .card-img-top,
+    .cartao-produto__imagem {
+      height: 145px !important;
+    }
+
+    .card-img-top {
+      object-fit: contain;
+      object-position: center;
+      padding: 7px !important;
+      background-color: #fff;
+    }
+
+    // Menos espaço dentro dos cartões
+    .card-body {
+      padding: 0.75rem;
+      min-width: 0;
+    }
+
+    // Nome do produto
+    h3 {
+      font-size: 0.9rem;
+      line-height: 1.35;
+      overflow-wrap: anywhere;
+    }
+
+    // Nome e localização do produtor
+    .texto-secundario.small {
+      font-size: 0.75rem;
+      line-height: 1.4;
+      overflow-wrap: anywhere;
+    }
+
+    // Preço adaptado ao espaço disponível
+    .preco {
+      font-size: 0.95rem;
+      line-height: 1.4;
+      overflow-wrap: anywhere;
+
+      .small {
+        font-size: 0.75rem;
+      }
+    }
+
+    // Botões mais compactos
+    .btn {
+      width: 100%;
+      min-height: 38px;
+      padding: 0.45rem 0.3rem;
+      font-size: 0.78rem;
+      line-height: 1.3;
+      white-space: normal;
+    }
+
+    .etiqueta-bio {
+      font-size: 0.65rem;
+    }
+  }
+}
+
+// ==========================================
+// FILTROS DO CATÁLOGO
+// ==========================================
+
 .filtros {
-  display: flex; flex-direction: column; gap: .75rem;
-  @include a-partir-de(lg) { flex-direction: row; align-items: center; }
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+
+  @include a-partir-de(lg) {
+    flex-direction: row;
+    align-items: center;
+  }
 }

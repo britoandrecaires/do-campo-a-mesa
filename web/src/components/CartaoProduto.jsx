@@ -36,19 +36,36 @@ export default function CartaoProduto({
   return (
     <article className="card cartao-produto h-100">
 
+
       {/* IMAGEM DO PRODUTO */}
       {produto.imagemUrl ? (
         <img
           src={produto.imagemUrl}
           className="card-img-top"
           alt={produto.nome}
+          loading="lazy"
+          style={{
+            width: '100%',
+            height: '230px',
+            objectFit: 'contain',
+            objectPosition: 'center',
+            backgroundColor: '#ffffff',
+            padding: '12px',
+            borderBottom: '1px solid #eee'
+          }}
         />
       ) : (
         <div
           className="cartao-produto__imagem"
           aria-hidden="true"
+          style={{
+            width: '100%',
+            height: '230px',
+            backgroundColor: '#e1e3d9'
+          }}
         />
       )}
+
 
       <div className="card-body d-flex flex-column">
 

@@ -10,7 +10,6 @@ info:
     avaliações, administração e leilões.
 
     As licitações são efetuadas em tempo real por Socket.io, não por REST.
-    As rotas assinaladas com "Por implementar" devolvem atualmente HTTP 501.
 servers:
   - url: http://localhost:3000/api
     description: Ambiente de desenvolvimento

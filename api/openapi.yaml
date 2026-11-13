@@ -332,18 +332,36 @@ paths:
         '404': { $ref: '#/components/responses/NaoEncontrado' }
         '409': { $ref: '#/components/responses/Conflito' }
 
+  
   /orders/{id}:
     parameters:
       - $ref: '#/components/parameters/Id'
     get:
       tags: [Encomendas]
-      summary: Detalhe individual de encomenda — por implementar
-      description: Endpoint existente, mas atualmente devolve HTTP 501.
-      deprecated: true
-      security: [{ bearerAuth: [] }]
+      summary: Consultar detalhe de uma encomenda
+      description: |
+        Devolve os dados de uma encomenda.
+        O comprador consulta apenas as suas encomendas.
+        O produtor consulta apenas as encomendas recebidas.
+        O administrador pode consultar qualquer encomenda.
+      security:
+        - bearerAuth: []
       responses:
-        '501': { $ref: '#/components/responses/PorImplementar' }
-        '401': { $ref: '#/components/responses/NaoAutorizado' }
+        '200':
+          description: Detalhe da encomenda
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Order'
+        '400':
+          $ref: '#/components/responses/PedidoInvalido'
+        '401':
+          $ref: '#/components/responses/NaoAutorizado'
+        '403':
+          $ref: '#/components/responses/Proibido'
+        '404':
+          $ref: '#/components/responses/NaoEncontrado'
+
 
   /orders/{id}/estado:
     parameters:
@@ -412,27 +430,60 @@ paths:
         '401': { $ref: '#/components/responses/NaoAutorizado' }
         '403': { $ref: '#/components/responses/Proibido' }
 
+  
   /auctions/{id}:
     parameters:
       - $ref: '#/components/parameters/Id'
     get:
       tags: [Leilões]
-      summary: Detalhe REST de leilão — por implementar
-      description: Endpoint existente, mas atualmente devolve HTTP 501. A sala em tempo real usa Socket.io.
-      deprecated: true
+      summary: Consultar detalhe de um leilão
+      description: |
+        Devolve os dados do leilão e as 20
+        licitações mais recentes.
+        As licitações em direto usam Socket.io.
       responses:
-        '501': { $ref: '#/components/responses/PorImplementar' }
+        '200':
+          description: Detalhe do leilão
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  leilao:
+                    $ref: '#/components/schemas/Auction'
+                  licitacoes:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/LicitacaoPublica'
+        '400':
+          $ref: '#/components/responses/PedidoInvalido'
+        '404':
+          $ref: '#/components/responses/NaoEncontrado'
 
   /auctions/{id}/bids:
     parameters:
       - $ref: '#/components/parameters/Id'
     get:
       tags: [Leilões]
-      summary: Histórico REST de licitações — por implementar
-      description: Endpoint existente, mas atualmente devolve HTTP 501. O histórico da sala é servido por Socket.io.
-      deprecated: true
+      summary: Consultar histórico de licitações
+      description: |
+        Devolve as 100 licitações mais recentes,
+        com o nome público do comprador,
+        valor e data.
       responses:
-        '501': { $ref: '#/components/responses/PorImplementar' }
+        '200':
+          description: Histórico de licitações
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/LicitacaoPublica'
+        '400':
+          $ref: '#/components/responses/PedidoInvalido'
+        '404':
+          $ref: '#/components/responses/NaoEncontrado'
+
 
   /reviews:
     get:
@@ -869,6 +920,23 @@ components:
             numLicitacoes: { type: integer }
             encomenda: { type: string, nullable: true }
             createdAt: { type: string, format: date-time }
+
+    LicitacaoPublica:
+      type: object
+      properties:
+        _id:
+          type: string
+        valor:
+          type: number
+          example: 85
+        nome:
+          type: string
+          example: Tasca do Lima
+        createdAt:
+          type: string
+          format: date-time
+
+
 
     ReviewInput:
       type: object

@@ -18,13 +18,7 @@ const CATEGORIAS = [
   'Outros'
 ];
 
-const EPOCAS = [
-  'Todas',
-  'Primavera',
-  'Verão',
-  'Outono',
-  'Inverno'
-];
+const EPOCAS = ['Todas', 'Primavera', 'Verão', 'Outono', 'Inverno'];
 
 const FILTRO_INICIAL = {
   q: '',
@@ -35,30 +29,30 @@ const FILTRO_INICIAL = {
   ordenacao: 'recentes'
 };
 
-// Permitir testar os filtros mesmo com dados simulados
+// Aplicar os mesmos filtros quando se utilizam dados simulados.
 function filtrarProdutosSimulados(lista, filtro) {
   const pesquisa = filtro.q.trim().toLowerCase();
 
-  const filtrados = lista.filter((p) => {
-    const correspondeNome = String(p.nome || '')
+  const filtrados = lista.filter((produto) => {
+    const correspondeNome = String(produto.nome || '')
       .toLowerCase()
       .includes(pesquisa);
 
     const correspondeCategoria =
       filtro.categoria === 'Todos' ||
-      p.categoria === filtro.categoria;
+      produto.categoria === filtro.categoria;
 
     const correspondeBio =
-      !filtro.bio || p.biologico === true;
+      !filtro.bio || produto.biologico === true;
 
     const correspondePreco =
       filtro.precoMax === '' ||
-      Number(p.preco) <= Number(filtro.precoMax);
+      Number(produto.preco) <= Number(filtro.precoMax);
 
     const correspondeEpoca =
       filtro.epoca === 'Todas' ||
-      (Array.isArray(p.epocas) &&
-        p.epocas.includes(filtro.epoca));
+      (Array.isArray(produto.epocas) &&
+        produto.epocas.includes(filtro.epoca));
 
     return (
       correspondeNome &&
@@ -70,24 +64,14 @@ function filtrarProdutosSimulados(lista, filtro) {
   });
 
   if (filtro.ordenacao === 'preco_asc') {
+    filtrados.sort((a, b) => Number(a.preco) - Number(b.preco));
+  } else if (filtro.ordenacao === 'preco_desc') {
+    filtrados.sort((a, b) => Number(b.preco) - Number(a.preco));
+  } else if (filtro.ordenacao === 'nome_asc') {
     filtrados.sort((a, b) =>
-      Number(a.preco) - Number(b.preco)
+      String(a.nome || '').localeCompare(String(b.nome || ''), 'pt')
     );
-  }
-
-  if (filtro.ordenacao === 'preco_desc') {
-    filtrados.sort((a, b) =>
-      Number(b.preco) - Number(a.preco)
-    );
-  }
-
-  if (filtro.ordenacao === 'nome_asc') {
-    filtrados.sort((a, b) =>
-      a.nome.localeCompare(b.nome, 'pt')
-    );
-  }
-
-  if (filtro.ordenacao === 'recentes') {
+  } else {
     filtrados.sort((a, b) =>
       (Date.parse(b.createdAt) || 0) -
       (Date.parse(a.createdAt) || 0)
@@ -99,20 +83,20 @@ function filtrarProdutosSimulados(lista, filtro) {
 
 export default function Catalogo() {
   const [produtos, setProdutos] = useState([]);
-
-  const [filtro, setFiltro] = useState({
-    ...FILTRO_INICIAL
-  });
-
+  const [filtro, setFiltro] = useState({ ...FILTRO_INICIAL });
   const [erro, setErro] = useState('');
   const [aCarregar, setACarregar] = useState(true);
+
+  // Recolhidos por defeito no telemóvel; visíveis sempre no desktop.
+  const [filtrosAvancadosAbertos, setFiltrosAvancadosAbertos] = useState(false);
 
   const carrinho = useCarrinho();
   const { utilizador } = useAuth();
 
-  // =====================================
-  // CARREGAR PRODUTOS COM FILTROS
-  // =====================================
+  const quantidadeFiltrosAvancados =
+    Number(filtro.precoMax !== '') +
+    Number(filtro.epoca !== 'Todas') +
+    Number(filtro.ordenacao !== 'recentes');
 
   useEffect(() => {
     let ativo = true;
@@ -122,21 +106,13 @@ export default function Catalogo() {
       setErro('');
 
       try {
-        // Modo com dados simulados
         if (USAR_DADOS_SIMULADOS) {
-          const lista = filtrarProdutosSimulados(
-            produtosSimulados,
-            filtro
-          );
+          const lista = filtrarProdutosSimulados(produtosSimulados, filtro);
 
-          if (ativo) {
-            setProdutos(lista);
-          }
-
+          if (ativo) setProdutos(lista);
           return;
         }
 
-        // Construir os filtros para a API
         const parametros = new URLSearchParams();
 
         if (filtro.q.trim()) {
@@ -144,10 +120,7 @@ export default function Catalogo() {
         }
 
         if (filtro.categoria !== 'Todos') {
-          parametros.set(
-            'categoria',
-            filtro.categoria
-          );
+          parametros.set('categoria', filtro.categoria);
         }
 
         if (filtro.bio) {
@@ -155,42 +128,27 @@ export default function Catalogo() {
         }
 
         if (filtro.precoMax !== '') {
-          parametros.set(
-            'precoMax',
-            filtro.precoMax
-          );
+          parametros.set('precoMax', filtro.precoMax);
         }
 
         if (filtro.epoca !== 'Todas') {
           parametros.set('epoca', filtro.epoca);
         }
 
-        parametros.set(
-          'ordenacao',
-          filtro.ordenacao
-        );
+        parametros.set('ordenacao', filtro.ordenacao);
 
-        // Consultar produtos reais no MongoDB
-        const lista = await api(
-          `/products?${parametros.toString()}`
-        );
+        const lista = await api(`/products?${parametros.toString()}`);
 
         if (ativo) {
-          setProdutos(
-            Array.isArray(lista) ? lista : []
-          );
+          setProdutos(Array.isArray(lista) ? lista : []);
         }
-
       } catch (err) {
         if (ativo) {
-          setErro(err.message);
+          setErro(err.message || 'Não foi possível carregar os produtos.');
           setProdutos([]);
         }
-
       } finally {
-        if (ativo) {
-          setACarregar(false);
-        }
+        if (ativo) setACarregar(false);
       }
     }
 
@@ -199,18 +157,13 @@ export default function Catalogo() {
     return () => {
       ativo = false;
     };
-
   }, [filtro]);
 
-  // =====================================
-  // ALTERAR FILTROS
-  // =====================================
-
   function mudar(campo) {
-    return (e) => {
-      const valor = e.target.type === 'checkbox'
-        ? e.target.checked
-        : e.target.value;
+    return (evento) => {
+      const valor = evento.target.type === 'checkbox'
+        ? evento.target.checked
+        : evento.target.value;
 
       setFiltro((anterior) => ({
         ...anterior,
@@ -220,54 +173,41 @@ export default function Catalogo() {
   }
 
   function limparFiltros() {
-    setFiltro({
-      ...FILTRO_INICIAL
-    });
+    setFiltro({ ...FILTRO_INICIAL });
   }
-
-  // =====================================
-  // INTERFACE DO CATÁLOGO
-  // =====================================
 
   return (
     <>
       {/* APRESENTAÇÃO */}
       <section className="destaque mb-4">
-        <h1>
-          Direto de quem produz, para a sua mesa.
-        </h1>
-
-        <p className="texto-secundario">
-          Produtores do Alto Minho.
-          Encomende ou dispute os lotes da época
-          nos leilões em direto.
+        <h1>Direto de quem produz, para a sua mesa.</h1>
+        <p className="texto-secundario mb-0">
+          Produtores do Alto Minho. Encomende ou dispute os lotes da
+          época nos leilões em direto.
         </p>
       </section>
 
-      {/* PESQUISA E CATEGORIAS */}
+      {/* PESQUISA, CATEGORIAS E BIOLÓGICO */}
       <section
         className="filtros mb-3"
         aria-label="Pesquisa e categorias"
       >
-        <label
-          className="visually-hidden"
-          htmlFor="pesquisa"
-        >
-          Pesquisar produtos
-        </label>
+        <div className="flex-grow-1" style={{ minWidth: 0 }}>
+          <label className="visually-hidden" htmlFor="pesquisa">
+            Pesquisar produtos
+          </label>
+          <input
+            id="pesquisa"
+            type="search"
+            className="form-control"
+            placeholder="Pesquisar kiwi, mel, Alvarinho..."
+            value={filtro.q}
+            maxLength={100}
+            onChange={mudar('q')}
+          />
+        </div>
 
-        <input
-          id="pesquisa"
-          type="search"
-          className="form-control"
-          placeholder="Pesquisar kiwi, mel, Alvarinho..."
-          value={filtro.q}
-          maxLength={100}
-          onChange={mudar('q')}
-        />
-
-        {/* CATEGORIAS */}
-        <div className="d-flex flex-wrap gap-2">
+        <div className="d-flex flex-wrap gap-2" role="group" aria-label="Categorias">
           {CATEGORIAS.map((categoria) => (
             <button
               key={categoria}
@@ -276,6 +216,8 @@ export default function Catalogo() {
                   ? 'btn-dark'
                   : 'btn-outline-secondary'
                 }`}
+              style={{ minHeight: 40, paddingInline: '0.7rem' }}
+              aria-pressed={filtro.categoria === categoria}
               onClick={() =>
                 setFiltro((anterior) => ({
                   ...anterior,
@@ -288,41 +230,55 @@ export default function Catalogo() {
           ))}
         </div>
 
-        {/* FILTRO BIOLÓGICO */}
-        <div className="form-check">
+        <div className="form-check d-flex align-items-center gap-2 mb-0">
           <input
             id="bio"
-            className="form-check-input"
+            className="form-check-input mt-0"
             type="checkbox"
             checked={filtro.bio}
             onChange={mudar('bio')}
           />
-
-          <label
-            className="form-check-label"
-            htmlFor="bio"
-          >
+          <label className="form-check-label" htmlFor="bio">
             Só biológico
           </label>
         </div>
       </section>
 
-      {/* FILTROS AVANÇADOS */}
+      {/* BOTÃO VISÍVEL APENAS NO TELEMÓVEL */}
+      <div className="d-md-none mb-3">
+        <button
+          type="button"
+          className="btn btn-outline-success w-100 d-flex align-items-center justify-content-center gap-2"
+          style={{ minHeight: 44 }}
+          aria-controls="catalogo-filtros-avancados"
+          aria-expanded={filtrosAvancadosAbertos}
+          onClick={() => setFiltrosAvancadosAbertos((anterior) => !anterior)}
+        >
+          <span aria-hidden="true">☷</span>
+          <span>Filtros avançados</span>
+          {quantidadeFiltrosAvancados > 0 && (
+            <span className="badge bg-success">
+              {quantidadeFiltrosAvancados}
+            </span>
+          )}
+          <span aria-hidden="true">
+            {filtrosAvancadosAbertos ? '⌃' : '⌄'}
+          </span>
+        </button>
+      </div>
+
+      {/* NO COMPUTADOR FICAM SEMPRE VISÍVEIS */}
       <section
-        className="mb-4"
+        id="catalogo-filtros-avancados"
+        className={`mb-3 ${filtrosAvancadosAbertos ? '' : 'd-none d-md-block'
+          }`}
         aria-label="Filtros avançados"
       >
         <div className="row g-3 align-items-end">
-
-          {/* PREÇO MÁXIMO */}
           <div className="col-12 col-md-3">
-            <label
-              htmlFor="precoMax"
-              className="form-label"
-            >
+            <label htmlFor="precoMax" className="form-label">
               Preço máximo (€)
             </label>
-
             <input
               id="precoMax"
               type="number"
@@ -335,15 +291,10 @@ export default function Catalogo() {
             />
           </div>
 
-          {/* ÉPOCA */}
           <div className="col-12 col-md-3">
-            <label
-              htmlFor="epoca"
-              className="form-label"
-            >
+            <label htmlFor="epoca" className="form-label">
               Época
             </label>
-
             <select
               id="epoca"
               className="form-select"
@@ -358,72 +309,52 @@ export default function Catalogo() {
             </select>
           </div>
 
-          {/* ORDENAÇÃO */}
           <div className="col-12 col-md-4">
-            <label
-              htmlFor="ordenacao"
-              className="form-label"
-            >
+            <label htmlFor="ordenacao" className="form-label">
               Ordenar por
             </label>
-
             <select
               id="ordenacao"
               className="form-select"
               value={filtro.ordenacao}
               onChange={mudar('ordenacao')}
             >
-              <option value="recentes">
-                Mais recentes
-              </option>
-
-              <option value="preco_asc">
-                Preço: mais barato primeiro
-              </option>
-
-              <option value="preco_desc">
-                Preço: mais caro primeiro
-              </option>
-
-              <option value="nome_asc">
-                Nome: A a Z
-              </option>
+              <option value="recentes">Mais recentes</option>
+              <option value="preco_asc">Preço: mais barato primeiro</option>
+              <option value="preco_desc">Preço: mais caro primeiro</option>
+              <option value="nome_asc">Nome: A a Z</option>
             </select>
           </div>
 
-          {/* LIMPAR FILTROS */}
           <div className="col-12 col-md-2">
             <button
               type="button"
               className="btn btn-outline-secondary w-100"
               onClick={limparFiltros}
+              style={{ minHeight: 38 }}
             >
               Limpar filtros
             </button>
           </div>
-
         </div>
       </section>
 
       {/* MENSAGENS */}
       {erro && (
-        <div
-          className="alert alert-danger"
-          role="alert"
-        >
+        <div className="alert alert-danger" role="alert">
           {erro}
         </div>
       )}
 
       {aCarregar && (
-        <p className="texto-secundario">
+        <p className="texto-secundario" role="status">
           A carregar produtos...
         </p>
       )}
 
       {/* RESULTADO DA PESQUISA */}
       {!aCarregar && !erro && (
-        <p className="texto-secundario small mb-3">
+        <p className="fw-semibold mb-3" role="status">
           {produtos.length}{' '}
           {produtos.length === 1
             ? 'produto encontrado'
@@ -431,12 +362,9 @@ export default function Catalogo() {
         </p>
       )}
 
-      {/* CARTÕES DOS PRODUTOS */}
+      {/* CARTÕES */}
       {!aCarregar && !erro && (
-        <section
-          className="grelha-produtos"
-          aria-label="Produtos"
-        >
+        <section className="grelha-produtos" aria-label="Produtos">
           {produtos.map((produto) => (
             <CartaoProduto
               key={produto._id}
@@ -452,14 +380,11 @@ export default function Catalogo() {
       )}
 
       {/* SEM RESULTADOS */}
-      {!aCarregar &&
-        !erro &&
-        produtos.length === 0 && (
-          <div className="alert alert-info mt-3">
-            Nenhum produto encontrado
-            com os filtros selecionados.
-          </div>
-        )}
+      {!aCarregar && !erro && produtos.length === 0 && (
+        <div className="alert alert-info mt-3">
+          Nenhum produto encontrado com os filtros selecionados.
+        </div>
+      )}
     </>
   );
 }

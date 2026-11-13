@@ -1,5 +1,7 @@
 
-import { Link, NavLink } from 'react-router-dom';
+import { useEffect, useState } from 'react';
+import { Link, NavLink, useLocation } from 'react-router-dom';
+
 import { useAuth } from '../context/AuthContext.jsx';
 import { useCarrinho } from '../context/CarrinhoContext.jsx';
 
@@ -28,6 +30,7 @@ function Avatar({ nome }) {
     <span
       className="d-inline-flex align-items-center justify-content-center flex-shrink-0"
       title={nome}
+      aria-hidden="true"
       style={{
         width: 38,
         height: 38,
@@ -37,7 +40,6 @@ function Avatar({ nome }) {
         fontSize: 13,
         fontWeight: 700
       }}
-      aria-hidden="true"
     >
       {iniciais(nome)}
     </span>
@@ -47,9 +49,26 @@ function Avatar({ nome }) {
 export default function Navbar() {
   const { utilizador, sair } = useAuth();
   const { linhas } = useCarrinho();
+  const { pathname } = useLocation();
+
+  const [menuAberto, setMenuAberto] = useState(false);
 
   const nome = utilizador?.nome || 'Utilizador';
   const papel = PAPEIS[utilizador?.papel] || 'Utilizador';
+
+  // Fechar automaticamente ao mudar de página
+  useEffect(() => {
+    setMenuAberto(false);
+  }, [pathname]);
+
+  function fecharMenu() {
+    setMenuAberto(false);
+  }
+
+  function terminarSessao() {
+    fecharMenu();
+    sair();
+  }
 
   return (
     <header className="barra-topo">
@@ -57,46 +76,69 @@ export default function Navbar() {
         className="navbar navbar-expand-lg container-xl"
         aria-label="Navegação principal"
       >
-        <Link to="/" className="navbar-brand marca">
+        {/* LOGÓTIPO */}
+        <Link
+          to="/"
+          className="navbar-brand marca"
+          onClick={fecharMenu}
+        >
           Do Campo à Mesa
         </Link>
 
-        {/* Avatar visível no telemóvel */}
+        {/* AVATAR NO TELEMÓVEL */}
         {utilizador && (
           <div className="d-lg-none ms-auto me-2">
             <Avatar nome={nome} />
           </div>
         )}
 
+        {/* BOTÃO HAMBÚRGUER */}
         <button
           className="navbar-toggler"
           type="button"
-          data-bs-toggle="collapse"
-          data-bs-target="#menu"
-          aria-controls="menu"
-          aria-expanded="false"
-          aria-label="Abrir menu"
+          onClick={() => setMenuAberto((atual) => !atual)}
+          aria-controls="menu-principal"
+          aria-expanded={menuAberto}
+          aria-label={menuAberto ? 'Fechar menu' : 'Abrir menu'}
         >
           <span className="navbar-toggler-icon" />
         </button>
 
-        <div className="collapse navbar-collapse" id="menu">
+        {/* CONTEÚDO DO MENU */}
+        <div
+          id="menu-principal"
+          className={`collapse navbar-collapse ${menuAberto ? 'show' : ''
+            }`}
+        >
           <ul className="navbar-nav me-auto">
             <li className="nav-item">
-              <NavLink to="/" end className="nav-link">
+              <NavLink
+                to="/"
+                end
+                className="nav-link"
+                onClick={fecharMenu}
+              >
                 Produtos
               </NavLink>
             </li>
 
             <li className="nav-item">
-              <NavLink to="/leiloes" className="nav-link">
+              <NavLink
+                to="/leiloes"
+                className="nav-link"
+                onClick={fecharMenu}
+              >
                 Leilões
               </NavLink>
             </li>
 
             {utilizador?.papel === 'comprador' && (
               <li className="nav-item">
-                <NavLink to="/encomendas" className="nav-link">
+                <NavLink
+                  to="/encomendas"
+                  className="nav-link"
+                  onClick={fecharMenu}
+                >
                   Encomendas
                 </NavLink>
               </li>
@@ -104,7 +146,11 @@ export default function Navbar() {
 
             {utilizador?.papel === 'produtor' && (
               <li className="nav-item">
-                <NavLink to="/produtor" className="nav-link">
+                <NavLink
+                  to="/produtor"
+                  className="nav-link"
+                  onClick={fecharMenu}
+                >
                   Painel
                 </NavLink>
               </li>
@@ -112,18 +158,25 @@ export default function Navbar() {
 
             {utilizador?.papel === 'admin' && (
               <li className="nav-item">
-                <NavLink to="/admin" className="nav-link">
+                <NavLink
+                  to="/admin"
+                  className="nav-link"
+                  onClick={fecharMenu}
+                >
                   Administração
                 </NavLink>
               </li>
             )}
           </ul>
 
-          <div className="d-flex flex-wrap align-items-center gap-3 py-2 py-lg-0">
+          {/* CONTA E AÇÕES */}
+          <div className="menu-acoes d-flex flex-wrap align-items-center gap-3 py-2 py-lg-0">
+
             {utilizador?.papel === 'comprador' && (
               <Link
                 to="/carrinho"
                 className="btn btn-outline-secondary"
+                onClick={fecharMenu}
               >
                 Carrinho ({linhas.length})
               </Link>
@@ -131,22 +184,18 @@ export default function Navbar() {
 
             {utilizador ? (
               <>
-                <div className="d-flex align-items-center gap-2">
-                  {/* Evitar duplicar o avatar no telemóvel */}
+                <div className="perfil-menu d-flex align-items-center gap-2">
+
+                  {/* Avatar apenas no computador */}
                   <div className="d-none d-lg-block">
                     <Avatar nome={nome} />
                   </div>
 
-                  <div
-                    className="d-flex flex-column"
-                    style={{ maxWidth: 180, lineHeight: 1.3 }}
-                  >
-                    <span
-                      className="fw-semibold text-truncate"
-                      title={nome}
-                    >
+                  <div className="d-flex flex-column">
+                    <span className="fw-semibold">
                       {nome}
                     </span>
+
                     <small className="text-muted">
                       {papel}
                     </small>
@@ -156,7 +205,7 @@ export default function Navbar() {
                 <button
                   type="button"
                   className="btn btn-outline-secondary"
-                  onClick={sair}
+                  onClick={terminarSessao}
                 >
                   Sair
                 </button>
@@ -166,6 +215,7 @@ export default function Navbar() {
                 <Link
                   to="/login"
                   className="btn btn-outline-secondary"
+                  onClick={fecharMenu}
                 >
                   Entrar
                 </Link>
@@ -173,6 +223,7 @@ export default function Navbar() {
                 <Link
                   to="/registo"
                   className="btn btn-success"
+                  onClick={fecharMenu}
                 >
                   Registar
                 </Link>

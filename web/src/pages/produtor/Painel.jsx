@@ -9,7 +9,8 @@ const formularioInicial = {
   preco: '',
   unidade: 'kg',
   stock: '',
-  biologico: false
+  biologico: false,
+  epocas: []
 };
 const proximosEstados = {
   pendente: 'confirmada',
@@ -18,6 +19,7 @@ const proximosEstados = {
 };
 const TIPOS_IMAGEM = ['image/jpeg', 'image/png', 'image/webp'];
 const LIMITE_IMAGEM = 5 * 1024 * 1024;
+const EPOCAS = ['Primavera', 'Verão', 'Outono', 'Inverno'];
 export default function PainelProdutor() {
   const { token } = useAuth();
   const [produtos, setProdutos] = useState([]);
@@ -101,6 +103,21 @@ export default function PainelProdutor() {
       [name]: type === 'checkbox' ? checked : value
     }));
   }
+  // Selecionar uma ou várias épocas (gravadas como array em MongoDB).
+  function alternarEpoca(epoca) {
+    setForm((anterior) => ({
+      ...anterior,
+      epocas: anterior.epocas.includes(epoca)
+        ? anterior.epocas.filter((e) => e !== epoca)
+        : [...anterior.epocas, epoca]
+    }));
+  }
+  function alternarTodoAno() {
+    setForm((anterior) => ({
+      ...anterior,
+      epocas: anterior.epocas.length === EPOCAS.length ? [] : [...EPOCAS]
+    }));
+  }
   function iniciarEdicao(produto) {
     setEditarId(produto._id);
     setImagemFormulario(null);
@@ -111,7 +128,8 @@ export default function PainelProdutor() {
       preco: String(produto.preco),
       unidade: produto.unidade || 'kg',
       stock: String(produto.stock),
-      biologico: Boolean(produto.biologico)
+      biologico: Boolean(produto.biologico),
+      epocas: Array.isArray(produto.epocas) ? [...produto.epocas] : []
     });
     setErro('');
     setSucesso('');
@@ -180,6 +198,10 @@ export default function PainelProdutor() {
     if (aGuardar) return;
     setErro('');
     setSucesso('');
+    if (form.epocas.length === 0) {
+      setErro('Seleciona pelo menos uma época. Para todo o ano, seleciona as quatro.');
+      return;
+    }
     setAGuardar(true);
     try {
       const corpo = {
@@ -454,6 +476,47 @@ export default function PainelProdutor() {
                   </label>
                 </div>
               </div>
+              {/* ÉPOCAS DO PRODUTO: permite uma ou várias */}
+              <div className="col-12">
+                <fieldset className="border rounded p-3">
+                  <legend className="float-none w-auto px-2 fs-6 fw-semibold mb-2">
+                    Épocas do produto
+                  </legend>
+                  <p className="text-muted small mb-2">
+                    Seleciona as estações em que o produto está disponível.
+                    Para produtos disponíveis durante todo o ano, marca as quatro.
+                  </p>
+                  <div className="row g-2">
+                    {EPOCAS.map((epoca) => (
+                      <div className="col-6 col-md-3" key={epoca}>
+                        <div className="form-check">
+                          <input
+                            className="form-check-input"
+                            type="checkbox"
+                            id={`epoca-${epoca}`}
+                            checked={form.epocas.includes(epoca)}
+                            onChange={() => alternarEpoca(epoca)}
+                            disabled={aGuardar}
+                          />
+                          <label className="form-check-label" htmlFor={`epoca-${epoca}`}>
+                            {epoca}
+                          </label>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                  <button
+                    type="button"
+                    className="btn btn-sm btn-outline-success mt-2"
+                    onClick={alternarTodoAno}
+                    disabled={aGuardar}
+                  >
+                    {form.epocas.length === EPOCAS.length
+                      ? 'Desmarcar todas'
+                      : 'Selecionar todo o ano'}
+                  </button>
+                </fieldset>
+              </div>
               <div className="col-12">
                 <label htmlFor="fotografia-formulario" className="form-label fw-semibold">
                   {editarId ? 'Nova fotografia (opcional)' : 'Fotografia do produto (opcional)'}
@@ -512,6 +575,13 @@ export default function PainelProdutor() {
                   <p>{p.categoria}</p>
                   <p><strong>{Number(p.preco).toFixed(2)} €</strong> / {p.unidade}</p>
                   <p>Stock: {p.stock}</p>
+                  <p className="text-muted small mb-2">
+                    Épocas: {Array.isArray(p.epocas) && p.epocas.length
+                      ? (p.epocas.length === EPOCAS.length
+                        ? 'Todo o ano'
+                        : p.epocas.join(', '))
+                      : 'Não definidas'}
+                  </p>
                   {p.biologico && <span className="badge bg-success align-self-start">BIO</span>}
                   <div className="d-flex flex-wrap gap-2 mt-3">
                     <button type="button" className="btn btn-outline-primary btn-sm"

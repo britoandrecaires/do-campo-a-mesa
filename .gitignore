@@ -35,3 +35,12 @@ Thumbs.db
 *.key
 *.p12
 *.pfx
+
+# Ficheiros de deployment
+/api-deploy.zip
+
+# Backups temporários
+/api/backup-imagens-antes-azure.json
+
+# Imagens utilizadas na migração para Azure
+/imagens-para-azure/

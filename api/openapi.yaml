@@ -11,8 +11,8 @@ info:
 
     As licitações são efetuadas em tempo real por Socket.io, não por REST.
 servers:
-  - url: http://localhost:3000/api
-    description: Ambiente de desenvolvimento
+  - url: /api
+    description: API do ambiente atual
 
 tags:
   - name: Autenticação

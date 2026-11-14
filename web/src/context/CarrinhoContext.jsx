@@ -1,11 +1,22 @@
 // Estado global do carrinho
-import { createContext, useContext, useMemo, useState } from 'react';
+import { createContext, useContext, useEffect, useMemo, useState } from 'react';
 
 const CarrinhoContext = createContext(null);
 
 export function CarrinhoProvider({ children }) {
-  const [linhas, setLinhas] = useState([]); // [{ produto, quantidade }]
+  const [linhas, setLinhas] = useState(() => {
+    try {
+      const guardado = localStorage.getItem('dcm_carrinho');
+      const produtos = guardado ? JSON.parse(guardado) : [];
 
+      return Array.isArray(produtos) ? produtos : [];
+    } catch {
+      return [];
+    }
+  });// [{ produto, quantidade }]
+  useEffect(() => {
+    localStorage.setItem('dcm_carrinho', JSON.stringify(linhas));
+  }, [linhas]);
   function adicionar(produto, quantidade = 1) {
     setLinhas((atual) => {
       const existe = atual.find((l) => l.produto._id === produto._id);
